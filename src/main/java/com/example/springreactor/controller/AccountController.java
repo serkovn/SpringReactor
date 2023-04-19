@@ -2,9 +2,12 @@ package com.example.springreactor.controller;
 
 import com.example.springreactor.model.Account;
 import com.example.springreactor.service.AccountService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -13,13 +16,13 @@ import reactor.core.publisher.Mono;
 @RestController
 @Slf4j
 @RequestMapping("/accounts")
+@Validated
 public class AccountController {
-
     private final AccountService accountService;
 
     @GetMapping
-    public Flux<Account> getAll() {
-        return accountService.getAll();
+    public Flux<Account> getFirstCount(@RequestParam(name = "count", defaultValue = "3") @Min(1) @Max(5) int count) {
+        return accountService.getFirsCount(count);
     }
 
     @GetMapping("{accountId}")

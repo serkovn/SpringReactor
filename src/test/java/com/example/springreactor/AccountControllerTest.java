@@ -1,98 +1,83 @@
 package com.example.springreactor;
 
 import com.example.springreactor.model.Account;
+import com.example.springreactor.model.ProfileStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.example.springreactor.model.ProfileStatus.ACTIVE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AccountControllerTest {
     @Autowired
-    WebTestClient webClient;
+    private WebTestClient webClient;
 
     @LocalServerPort
-    int randomServerPort;
+    private int randomServerPort;
 
     @Test
-    void _0_test_getAccounts() {
-        webClient.get().uri("/accounts")
+    void getFirstSixAccounts() {
+        webClient.get().uri("/accounts?count=6")
                 .header(HttpHeaders.ACCEPT, "application/json")
                 .exchange()
-                .expectStatus().isOk()
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-                .expectBodyList(Account.class);
-
+                .expectStatus().is5xxServerError();
     }
 
     @Test
-    void _1_testAddNewAccount() {
-        var newAccount = createAccount();
+    void createNewAccount() {
+        var newAccount = Account.builder()
+                .name("Николай")
+                .surname("Иванов")
+                .email("nivan@mail.ru")
+                .status(ProfileStatus.ACTIVE)
+                .build();
 
         webClient.post().uri("/accounts")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
                 .body(Mono.just(newAccount), Account.class)
                 .exchange()
                 .expectStatus().isOk()
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
                 .jsonPath("$.id").isNotEmpty()
-                .jsonPath("$.firstName").isEqualTo(newAccount.getFirstName())
-                .jsonPath("$.lastName").isEqualTo(newAccount.getLastName());
+                .jsonPath("$.name").isEqualTo(newAccount.getName())
+                .jsonPath("$.surname").isEqualTo(newAccount.getSurname());
     }
 
     @Test
-    void _2_test() {
+    void getFirstDefaultAccounts() {
         webClient.get().uri("/accounts")
                 .exchange()
                 .expectStatus().isOk()
                 .returnResult(Account.class)
                 .getResponseBody()
                 .as(StepVerifier::create)
-                .expectNextCount(4)
+                .expectNextCount(3)
                 .expectComplete()
                 .verify();
     }
 
     @Test
-    void _3_test() {
-        Instant start = Instant.now();
-        var accounts = Stream.of(1, 2, 3, 4, 5)
-                .map(i -> WebClient.create("http://localhost:" + randomServerPort)
-                        .get().uri("/accounts/{id}", i).header(HttpHeaders.ACCEPT, "application/json")
+    void parallelRequest() {
+        var flux = Flux.fromStream(Stream.of(1L, 2L, 3L))
+                .flatMapSequential((index) -> WebClient.create("http://localhost:" + randomServerPort)
+                        .get().uri("/accounts/{id}", index)
                         .retrieve()
-                        .bodyToMono(Account.class))
-                .collect(Collectors.toList());
-        Mono.when(accounts).block();
-        assertEquals(Boolean.TRUE, Duration.between(start, Instant.now()).toMillis() < 3000);
-    }
-
-
-    private Account createAccount() {
-        Account account = new Account();
-        account.setFirstName("some name");
-        account.setLastName("some name");
-        account.setLocale("ENGLISH");
-        account.setStatus(ACTIVE);
-        return account;
+                        .bodyToMono(Account.class));
+        var time = StepVerifier.create(flux)
+                .expectNextCount(3).expectComplete().verify();
+        assertTrue(time.toMillis() > 2000);
+        assertTrue(time.toMillis() < 3000);
     }
 }

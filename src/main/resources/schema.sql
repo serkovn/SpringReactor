@@ -1,19 +1,18 @@
-CREATE TABLE account (
-                          id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                          first_name VARCHAR(255),
-                          last_name VARCHAR(255),
-                          email VARCHAR(255),
-                          created_date TIMESTAMP,
-                         /* modified_date TIMESTAMP,*/
-                          locale VARCHAR(255),
-                          status VARCHAR(255)
+CREATE TABLE IF NOT EXISTS account
+(
+    id           BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name         VARCHAR(255),
+    surname      VARCHAR(255),
+    email        VARCHAR(255),
+    created_date TIMESTAMP,
+    status       VARCHAR(255)
 );
 
-INSERT INTO account(first_name, last_name, email, created_date, locale, status)
-VALUES('Nikita', 'Serkov', 'ser@mail.ru', '2023-04-17T11:51:02+00:00', 'RUS', 'ACTIVE');
+INSERT INTO account(name, surname, email, created_date, status)
+VALUES ('Никита', 'Злобин', 'nzlo@mail.ru', '2023-04-17T11:51:02+00:00', 'ACTIVE');
 
-INSERT INTO account(first_name, last_name, email, created_date, locale, status)
-VALUES('Anna', 'Serkova', 'ann@mail.ru', '2023-04-17T11:51:02+00:00', 'FRENCH', 'ACTIVE');
+INSERT INTO account(name, surname, email, created_date, status)
+VALUES ('Анна', 'Успокина', 'ann@mail.ru', '2023-04-17T11:51:02+00:00', 'ACTIVE');
 
-INSERT INTO account(first_name, last_name, email, created_date, locale, status)
-VALUES('Peter', 'Ivanov', 'pet@mail.ru', '2023-04-17T11:51:02+00:00', 'ENGLISH', 'DEACTIVATE');
+INSERT INTO account(name, surname, email, created_date, status)
+VALUES ('Петер', 'Семенов', 'pet@mail.ru', '2023-04-17T11:51:02+00:00', 'DEACTIVATE');
